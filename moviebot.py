@@ -32,9 +32,7 @@ async def post_init(application: Application):
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
-        # Fila 1
         [InlineKeyboardButton("🎬 Buscar Película", callback_data="search_type:movie")],
-        # Fila 2 (corregido el cierre de la lista anterior)
         [InlineKeyboardButton("📺 Buscar Serie/Novela", callback_data="search_type:tv")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -185,19 +183,17 @@ async def handle_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
         seasons = details.get('number_of_seasons', 'N/A')
         episodes = details.get('number_of_episodes', 'N/A')
         genres = ', '.join([g['name'] for g in details.get('genres', [])][:3])
-        companies = ', '.join([c['name'] for c in details.get('production_companies', [])][:2])
+        countries = ', '.join([c['name'] for c in details.get('production_countries', [])][:3])
         overview = details.get('overview', 'Sin descripción disponible').replace('_', '\\_').replace('*', '\\*')
         
         # Detalles por temporada
         season_details = []
         if seasons != 'N/A':
-            season_data = await fetch_tmdb_data(f"/tv/{media_id}/season/1")
-            if season_data and season_data.get('episodes'):
-                for season in details.get('seasons', []):
-                    if season['season_number'] > 0:
-                        season_details.append(
-                            f"• Temp. {season['season_number']}: {season['episode_count']} capítulos"
-                        )
+            for season in details.get('seasons', []):
+                if season['season_number'] > 0:
+                    season_details.append(
+                        f"• Temp. {season['season_number']}: {season['episode_count']} capítulos"
+                    )
         
         season_info = '\n'.join(season_details[:100]) if season_details else 'Información no disponible'
 
@@ -209,7 +205,7 @@ async def handle_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"🎬 *Episodios totales:* {episodes}\n"
             f"⭐ *Puntuación:* {details.get('vote_average', 'N/A')}/10\n"
             f"🎭 *Géneros:* {genres}\n"
-            f"🏢 *Productoras:* {companies}\n\n"
+            f"🌍 *Países:* {countries}\n\n"
             f"📑 *Detalles por temporada:*\n{season_info}\n\n"
             f"📖 *Sinopsis:*\n{overview}"
         )
@@ -223,7 +219,7 @@ async def handle_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"🎬 *Episodios totales:* {episodes}\n"
             f"⭐ *Puntuación:* {details.get('vote_average', 'N/A')}/10\n"
             f"🎭 *Géneros:* {genres}\n"
-            f"🏢 *Productoras:* {companies}\n\n"
+            f"🌍 *Países:* {countries}\n\n"
             f"📑 *Detalles por temporada:*\n{season_info}\n\n"
             f"📖 *Sinopsis:*\n{overview}\n\n"
         )
