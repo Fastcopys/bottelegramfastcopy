@@ -119,7 +119,7 @@ async def show_admin_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"👤 User `{user_id}`:\n"
             f"- Búsquedas: {data['count']}\n"
             f"- Créditos: {data['granted']}\n"
-            f"- Disponibles: {5 + data['granted'] - data['count']}\n\n"
+            f"- Disponibles: {500 + data['granted'] - data['count']}\n\n"
         )
     
     stats_text += f"🔄 Solicitudes pendientes: {len(pending_requests)}"
