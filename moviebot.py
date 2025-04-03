@@ -96,7 +96,7 @@ async def show_user_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"📊 *Tu Estado*\n\n"
         f"🆔 ID de Usuario: `{user_id}`\n"
         f"🔍 Búsquedas realizadas: {data['count']}\n"
-        f"🎯 Límite total: {5 + data['granted']}\n"
+        f"🎯 Límite total: {500 + data['granted']}\n"
         f"💎 Créditos restantes: {remaining}"
     )
     
