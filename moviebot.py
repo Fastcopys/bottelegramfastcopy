@@ -53,7 +53,7 @@ async def post_init(application: Application):
 async def check_user_limit(user_id: int) -> bool:
     if user_id not in user_searches:
         user_searches[user_id] = {'count': 0, 'granted': 0}
-    allowed = 500 + user_searches[user_id]['granted']
+    allowed = 15 + user_searches[user_id]['granted']
     return user_searches[user_id]['count'] < allowed
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -61,7 +61,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if user_id not in user_searches:
         user_searches[user_id] = {'count': 0, 'granted': 0}
     
-    remaining = 500 + user_searches[user_id]['granted'] - user_searches[user_id]['count']
+    remaining = 15 + user_searches[user_id]['granted'] - user_searches[user_id]['count']
     
     keyboard = [
         [InlineKeyboardButton("🎬 Buscar Película", callback_data="search_type:movie"),
@@ -90,13 +90,13 @@ async def show_user_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     user_id = query.from_user.id
     data = user_searches.get(user_id, {'count': 0, 'granted': 0})
-    remaining = 500 + data['granted'] - data['count']
+    remaining = 15 + data['granted'] - data['count']
     
     status_text = (
         f"📊 *Tu Estado*\n\n"
         f"🆔 ID de Usuario: `{user_id}`\n"
         f"🔍 Búsquedas realizadas: {data['count']}\n"
-        f"🎯 Límite total: {500 + data['granted']}\n"
+        f"🎯 Límite total: {15 + data['granted']}\n"
         f"💎 Créditos restantes: {remaining}"
     )
     
