@@ -1,7 +1,4 @@
 import logging
-import json
-import os
-import requests
 from telegram import (
     Update,
     InlineKeyboardButton,
@@ -11,9 +8,11 @@ from telegram import (
     BotCommand
 )
 from telegram.ext import Application, CommandHandler, ContextTypes, CallbackQueryHandler, MessageHandler, filters
+import requests
 from urllib.parse import quote
 from flask import Flask
 from threading import Thread
+import os
 
 # Configuración
 TOKEN = "8053274411:AAFgsGcQbwhO-scWXKT53EFK8ppXDoAumKw"
@@ -22,7 +21,6 @@ BASE_URL = "https://api.themoviedb.org/3"
 IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500"
 ADMIN_ID = 7302458830
 WHATSAPP_NUM = "+5352425434"
-JSON_FILE = "user_data.json"
 
 # Configurar servidor web para mantener activo
 app = Flask(__name__)
@@ -35,25 +33,9 @@ def home():
 def run_flask():
     app.run(host='0.0.0.0', port=port)
 
-# Almacenamiento en JSON
+# Almacenamiento en memoria
+user_searches = {}
 pending_requests = set()
-
-# Funciones de persistencia
-def load_users():
-    if os.path.exists(JSON_FILE):
-        try:
-            with open(JSON_FILE, 'r') as f:
-                return json.load(f)
-        except (json.JSONDecodeError, IOError):
-            return {}
-    return {}
-
-def save_users(data):
-    try:
-        with open(JSON_FILE, 'w') as f:
-            json.dump(data, f, indent=2)
-    except IOError as e:
-        logging.error(f"Error guardando datos: {str(e)}")
 
 # Configurar logging
 logging.basicConfig(
@@ -69,18 +51,15 @@ async def post_init(application: Application):
     ])
 
 async def check_user_limit(user_id: int) -> bool:
-    user_searches = load_users()
-    user_data = user_searches.get(str(user_id), {'count': 0, 'granted': 0})
-    allowed = 5 + user_data['granted']
-    return user_data['count'] < allowed
-
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = str(update.effective_user.id)
-    user_searches = load_users()
-    
     if user_id not in user_searches:
         user_searches[user_id] = {'count': 0, 'granted': 0}
-        save_users(user_searches)
+    allowed = 5 + user_searches[user_id]['granted']
+    return user_searches[user_id]['count'] < allowed
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    if user_id not in user_searches:
+        user_searches[user_id] = {'count': 0, 'granted': 0}
     
     remaining = 5 + user_searches[user_id]['granted'] - user_searches[user_id]['count']
     
@@ -89,7 +68,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
          InlineKeyboardButton("📺 Buscar Serie", callback_data="search_type:tv")]
     ]
     
-    if int(user_id) == ADMIN_ID:
+    if user_id == ADMIN_ID:
         keyboard.append([InlineKeyboardButton("📊 Estadísticas Admin", callback_data="admin_stats")])
     else:
         keyboard.append([InlineKeyboardButton("📈 Mi Estado", callback_data="user_status")])
@@ -109,8 +88,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def show_user_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-    user_id = str(query.from_user.id)
-    user_searches = load_users()
+    user_id = query.from_user.id
     data = user_searches.get(user_id, {'count': 0, 'granted': 0})
     remaining = 5 + data['granted'] - data['count']
     
@@ -135,9 +113,7 @@ async def show_admin_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.message.reply_text("❌ Acceso no autorizado")
         return
     
-    user_searches = load_users()
     stats_text = "📈 *Estadísticas Globales*\n\n"
-    
     for user_id, data in user_searches.items():
         stats_text += (
             f"👤 User `{user_id}`:\n"
@@ -162,7 +138,7 @@ async def select_search_type(update: Update, context: ContextTypes.DEFAULT_TYPE)
         text=f"🔍 Escribe el título de la {'película' if search_type == 'movie' else 'serie'}:")
 
 async def handle_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = str(update.effective_user.id)
+    user_id = update.effective_user.id
     
     if not await check_user_limit(user_id):
         message = f"Usuario {user_id} solicita más créditos"
@@ -335,12 +311,9 @@ async def handle_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.message.reply_text(details_text, parse_mode='Markdown', reply_markup=keyboard)
 
 async def buscar_media(update: Update, context: ContextTypes.DEFAULT_TYPE, media_type: str):
-    user_id = str(update.effective_user.id)
-    user_searches = load_users()
-    
+    user_id = update.effective_user.id
     try:
         user_searches[user_id]['count'] += 1
-        save_users(user_searches)
         
         query = ' '.join(context.args)
         if not query:
@@ -373,7 +346,6 @@ async def buscar_media(update: Update, context: ContextTypes.DEFAULT_TYPE, media
     except Exception as e:
         logger.error(f"Error: {str(e)}")
         user_searches[user_id]['count'] -= 1
-        save_users(user_searches)
         await update.message.reply_text('❌ Error procesando tu solicitud')
 
 async def credito(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -386,7 +358,7 @@ async def credito(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     try:
-        user_id = str(context.args[0])
+        user_id = int(context.args[0])
         amount = int(context.args[1])
         if amount < 1:
             raise ValueError
@@ -394,14 +366,11 @@ async def credito(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ Cantidad inválida")
         return
 
-    user_searches = load_users()
-    
     if user_id not in user_searches:
         user_searches[user_id] = {'count': 0, 'granted': 0}
 
     user_searches[user_id]['granted'] += amount
     pending_requests.discard(user_id)
-    save_users(user_searches)
     
     try:
         await context.bot.send_message(
