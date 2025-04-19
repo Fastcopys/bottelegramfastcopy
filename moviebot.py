@@ -17,7 +17,7 @@ from datetime import datetime, timedelta
 
 # Configuración
 TOKEN = "8053274411:AAFmo-9z7B8cj-dvBRmJA-vlS0CN0-mq41U"
-TMDB_API_KEY = "07579db4e41ee712acd413cad1abb160"
+TMDB_API_KEY = "9cfa4bee2c104788bb94874075f93ed6"
 BASE_URL = "https://api.themoviedb.org/3"
 IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500"
 ADMIN_ID = 7302458830
