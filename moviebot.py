@@ -877,6 +877,10 @@ def main():
         .post_init(post_init) \
         .build()
 
+    # Eliminar webhook previo
+    application.bot.delete_webhook()
+
+
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("credito", credito))
     
